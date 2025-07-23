@@ -56,6 +56,17 @@ public class HashTable<E extends Comparable<E>> {
      * @param content E The content of a new node, to be placed in the array.
      */
     public void add(E content) {
+        this.loadFactor = (double) this.usage / this.underlying.length;
+
+        if (this.loadFactor >= LOAD_FACTOR_THRESHOLD) {
+            this.rehash();
+        }
+
+        this.rehashInsert(content);
+        this.loadFactor = (double) this.usage / this.underlying.length; //SB: allows loadfactor to update and rehash?
+        //SB: Not sure how I'm going to rework this yet, might change if tests don't pass. 
+    }
+    private void rehashInsert (E content) { //SB: Had to look this up tried to find a way to allow node insert and call add() method.
         // Create the new node to add to the hashtable
         Node<E> newNode = new Node<E>(content);
         // Use the hashcode for the new node's contents to find where to place it in the
@@ -66,7 +77,7 @@ public class HashTable<E extends Comparable<E>> {
             // Selected position not in use. Place the new node here and update the usage of
             // the underlying array.
             this.underlying[position] = newNode;
-            this.usage += 1;
+            this.usage ++; //SB: Changed to "++" in line 80 and 89 as well to increase size.
         } else {
             // Selected position in use. We will append its contents to the new node first,
             // then place the new node in the selected position. Effectively the new node
@@ -75,8 +86,23 @@ public class HashTable<E extends Comparable<E>> {
             this.underlying[position] = newNode;
         }
         // Update the number of nodes
-        this.totalNodes += 1;
+        this.totalNodes ++;
     } // method add
+    private void rehash() {
+        Node<E>[] oldArray = this.underlying;
+        this.underlying = new Node[oldArray.length * 2];
+        this.usage = 0;
+        this.totalNodes = 0;
+
+        for (int i = 0; i < oldArray.length; i++) {
+            Node<E> current = oldArray[i];
+            while (current != null) {
+                E content = current.getContent();
+                this.rehashInsert(content);
+                current = current.getNext();
+            }
+        }
+    } // SB: doubles size of the array with node inserts, unsure about syntax in line 93.
 
     /**
      * Searches the underlying array of linked lists for the target value. If the
@@ -92,11 +118,11 @@ public class HashTable<E extends Comparable<E>> {
     public boolean contains(E target) {
         int position = Math.abs(target.hashCode()) % this.underlying.length;
 
-    Node<E> current = this.underlying[position]; //SB: targets/searches for underlying position
+        Node<E> current = this.underlying[position]; //SB: targets/searches for underlying position
 
-    while (current != null) {
-        if (current.getContent().equals(target)) {
-            return true; //SB: If match is found
+        while (current != null) {
+             if (current.getContent().equals(target)) { //SB: May need to reformat this line.
+                return true; //SB: If match is found
         }
         current = current.getNext(); //SB: moves on to next node
     }
